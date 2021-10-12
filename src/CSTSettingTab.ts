@@ -1,10 +1,10 @@
 import { App, PluginSettingTab } from 'obsidian';
-import Cites2PandocPlugin from './main';
+import CSTPlugin from './main';
 
-export class SampleSettingTab extends PluginSettingTab {
-    plugin: Cites2PandocPlugin;
+export class CSTSettingTab extends PluginSettingTab {
+    plugin: CSTPlugin;
 
-    constructor(app: App, plugin: Cites2PandocPlugin) {
+    constructor(app: App, plugin: CSTPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }

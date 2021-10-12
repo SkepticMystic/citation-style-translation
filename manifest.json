@@ -1,10 +1,10 @@
 {
-	"id": "citation-translation",
-	"name": "Citation Translation",
+	"id": "citation-style-translation",
+	"name": "Citation Style Translation",
 	"version": "0.0.8",
 	"minAppVersion": "0.12.6",
 	"description": "Translate your citations from one form to another",
 	"author": "SkepticMystic",
-	"authorUrl": "https://github.com/SkepticMystic/citation-translation",
+	"authorUrl": "https://github.com/SkepticMystic/citation-style-translation",
 	"isDesktopOnly": false
 }

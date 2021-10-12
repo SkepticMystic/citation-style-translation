@@ -1,11 +1,11 @@
 import { Notice, Plugin } from 'obsidian';
 import { authorReg, citeRegex } from 'src/contants';
 import { copy } from 'src/util';
-import { SampleSettingTab } from './SampleSettingTab';
+import { CSTSettingTab } from './CSTSettingTab';
 
-interface Cites2PandocSettings { }
+interface CSTSettings { }
 
-const DEFAULT_SETTINGS: Cites2PandocSettings = {}
+const DEFAULT_SETTINGS: CSTSettings = {}
 
 declare module 'obsidian' {
 	interface App {
@@ -45,8 +45,8 @@ declare module 'obsidian' {
 		}
 	}
 }
-export default class Cites2PandocPlugin extends Plugin {
-	settings: Cites2PandocSettings;
+export default class CSTPlugin extends Plugin {
+	settings: CSTSettings;
 
 	async onload() {
 		console.log('loading plugin');
@@ -64,7 +64,7 @@ export default class Cites2PandocPlugin extends Plugin {
 			callback: this.Pandoc2Cites
 		});
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new CSTSettingTab(this.app, this));
 	}
 
 	async getSelectionText() {
