@@ -1,6 +1,6 @@
 {
   "name": "citation-translation",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Translate your citations from one form to another",
   "main": "main.js",
   "scripts": {
