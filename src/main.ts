@@ -1,5 +1,5 @@
 import { Notice, Plugin } from 'obsidian';
-import { citeRegex } from 'src/contants';
+import { authorReg, citeRegex } from 'src/contants';
 import { copy } from 'src/util';
 import { SampleSettingTab } from './SampleSettingTab';
 
@@ -68,20 +68,15 @@ export default class Cites2PandocPlugin extends Plugin {
 		if (!entries) { new Notice('Please enable the Citations plugin'); return }
 		let refs = Object.values(entries).map(entry => entry.data)
 
-		const firstAuthorSurname = (cite: string) =>
-			cite.split(',')[0].split('et al.')[0].split('&')[0].trim();
-		const citeYear = (cite: string) => cite.match(new RegExp(/\d{4}/g))[0];
-
 		// Read current file
 		const currFile = this.app.workspace.getActiveFile()
 		const content = await this.app.vault.cachedRead(currFile)
 
-		console.log(citeRegex)
 		const cites = content.match(citeRegex)
 		console.log({ cites })
 		const citeMap = cites.map((cite) => {
-			const firstAuthor = firstAuthorSurname(cite);
-			const year = citeYear(cite)
+			const firstAuthor = cite.match(authorReg)[0];
+			const year = cite.match(/\d{4}/g)[0]
 			return { cite, firstAuthor, year };
 		});
 		console.log({ citeMap })
@@ -104,6 +99,7 @@ export default class Cites2PandocPlugin extends Plugin {
 		})
 		console.log(replacements)
 
+		// Latex → Pandoc
 		replacements = replacements.replaceAll(/\\cite\{(.+?)\}/g, '[@$1]')
 		copy(replacements)
 	}
