@@ -4,6 +4,16 @@ import { copy } from 'src/util';
 import { CSTSettingTab } from './CSTSettingTab';
 
 interface CSTSettings { }
+interface Entry {
+	id: string,
+	author?: Author[],
+	issued?: { 'date-parts': number[][] }
+}
+interface Author {
+	family?: string,
+	given?: string,
+	literal?: string
+}
 
 const DEFAULT_SETTINGS: CSTSettings = {}
 
@@ -15,28 +25,7 @@ declare module 'obsidian' {
 					library: {
 						entries: {
 							[id: string]: {
-								data: {
-									id: string,
-									// abstract?: string,
-									// accessed?: any,
-									author?: {
-										family?: string,
-										given?: string,
-										literal?: string
-									}[],
-									// DOI?: string,
-									// ISSN?: string,
-									// issue?: string,
-									issued?: { 'date-parts': number[][] },
-									// language?: string,
-									// note?: string,
-									// page?: string,
-									// source?: string,
-									// title?: string,
-									// type?: string,
-									// URL?: string,
-									// volume?: string,
-								}
+								data: Entry
 							}
 						}
 					}
@@ -72,11 +61,9 @@ export default class CSTPlugin extends Plugin {
 		if (window.getSelection) {
 			text = window.getSelection().toString();
 		}
-
 		if (text !== '') {
 			return text
 		} else {
-			// Read current file
 			const currFile = this.app.workspace.getActiveFile()
 			return (await this.app.vault.cachedRead(currFile))
 		}
@@ -89,45 +76,66 @@ export default class CSTPlugin extends Plugin {
 		return refs
 	}
 
+	authorName = (author: Author) => {
+		if (author.family) { return author.family }
+		else if (author.literal) { return author.literal }
+	}
+
+	/**
+	 * Given a `citekey` grab the corresponding in-text citation (no brackets)
+	 * @param  {string} citekey
+	 * @param  {Entry[]} refs
+	 * @returns {string} `Author & Another et al., Year`
+	 */
+	citekey2inText(citekey: string, refs: Entry[]): string {
+		const ref = refs.find(ref => ref.id === citekey)
+		if (!ref) return
+
+		const year = ref.issued['date-parts'][0][0]
+		let authorStr: string;
+
+		if (ref.author.length <= 2) {
+			authorStr = ref.author.map(this.authorName).join(' & ')
+		} else {
+			authorStr = `${this.authorName(ref.author[0])} et al.`
+		}
+		console.log({ year, authorStr })
+
+		return `${authorStr}, ${year}`
+	}
+
 	Pandoc2Cites = async () => {
 		const content = await this.getSelectionText()
-		console.log({ content })
 		const refs = this.getCitationEntries()
 		if (!refs) { return }
 
+		// Array of pandoc citations: `['[@1]', '[@2]', ...]`
 		const pandocCites = content.match(/\[@.+?\]/g)
-		console.log({ pandocCites })
 
 		let replacement = content.slice();
-
 		pandocCites.forEach(pCite => {
-			const key = pCite.replace(/\[@(.+?)\]/, '$1')
-			const ref = refs.find(ref => ref.id === key)
-			if (!ref) return
-			console.log({ pCite, key, ref })
-			const year = ref.issued['date-parts'][0][0]
-			let authorStr: string;
+			let currBracket = ''
+			const keys = pCite.replace(/\[(.+?)\]/, '$1')
+			const splitKeys = keys.split(';')
 
-			if (ref.author.length <= 2) {
-				const authorArr: string[] = ref.author.map(author => {
-					if (author.family) {
-						return author.family
-					} else if (author.literal) {
-						return author.literal
+			if (splitKeys.length > 1) { // Multi-bracket
+				splitKeys.forEach((key, i) => {
+					const citekey = key.trim().slice(1);
+					const intextCite = this.citekey2inText(citekey, refs)
+					if (i === 0) {
+						currBracket += `(${intextCite}; `
+					} else if (i !== splitKeys.length - 1) {
+						currBracket += `${intextCite}; `
+					} else {
+						currBracket += `${intextCite})`
 					}
 				})
-				authorStr = authorArr.join(' & ')
-			} else if (ref.author.length > 2) {
-				if (ref.author[0].family) {
-					authorStr = `${ref.author[0].family} et al.`
-				} else if (ref.author[0].literal) {
-					authorStr = `${ref.author[0].literal} et al.`
-				}
-
+				replacement = replacement.replaceAll(pCite, currBracket)
+			} else { // Single bracket
+				const citekey = splitKeys[0].slice(1)
+				const intextCite = `(${this.citekey2inText(citekey, refs)})`
+				replacement = replacement.replaceAll(pCite, intextCite)
 			}
-			console.log({ year, authorStr })
-			const intextCite = `(${authorStr}, ${year})`
-			replacement = replacement.replaceAll(pCite, intextCite)
 		})
 		console.log({ replacement })
 		copy(replacement)
@@ -136,7 +144,6 @@ export default class CSTPlugin extends Plugin {
 
 	cites2Pandoc = async () => {
 		const content = await this.getSelectionText()
-		console.log({ content })
 		const refs = this.getCitationEntries()
 		if (!refs) { return }
 
@@ -145,16 +152,15 @@ export default class CSTPlugin extends Plugin {
 
 		let replacements = content.slice()
 		if (cites) {
-			const citeMap = cites.map((cite) => {
-				const firstAuthor = cite.match(authorReg)[0];
-				const year = cite.match(/\d{4}/g)[0]
-				return { cite, firstAuthor, year };
+			const citeMap = cites.map((original) => {
+				const firstAuthor = original.match(authorReg)[0];
+				const year = original.match(/\d{4}/g)[0]
+				return { original, firstAuthor, year };
 			});
 			console.log({ citeMap })
 
 			// Replace cites with pandoc cites
 			citeMap.forEach((cite, i) => {
-				console.log({ cite })
 				const matchingRef = refs.find(ref =>
 					ref.author?.some(author =>
 						author?.family === cite.firstAuthor ||
@@ -165,26 +171,25 @@ export default class CSTPlugin extends Plugin {
 
 				if (matchingRef) {
 					console.log({ matchingRef })
+					const { original } = cite
+					const { id } = matchingRef
 					if ( // Start of a multi-cite
-						cite.cite.endsWith(';') &&
-						!citeMap[i - 1].cite.endsWith(';')
+						original.endsWith(';') &&
+						(!citeMap[i - 1] || !citeMap[i - 1].original.endsWith(';'))
 					) {
-						replacements = replacements.replaceAll(`(${cite.cite}`, `[@${matchingRef.id};`)
-					}
-					else if ( // Middle of a multi-cite
-						cite.cite.endsWith(';') &&
-						citeMap[i - 1].cite.endsWith(';')
+						replacements = replacements.replaceAll(`(${original}`, `[@${id};`)
+					} else if ( // Middle of a multi-cite
+						original.endsWith(';') &&
+						citeMap[i - 1].original.endsWith(';')
 					) {
-						replacements = replacements.replaceAll(`${cite.cite}`, `@${matchingRef.id};`)
-					}
-					else if ( // End of a multi-cite
-						!cite.cite.endsWith(';') &&
-						citeMap[i - 1]?.cite.endsWith(';')
+						replacements = replacements.replaceAll(original, `@${id};`)
+					} else if ( // End of a multi-cite
+						!original.endsWith(';') &&
+						citeMap[i - 1]?.original.endsWith(';')
 					) {
-						replacements = replacements.replaceAll(`${cite.cite})`, `@${matchingRef.id}]`)
-
+						replacements = replacements.replaceAll(`${original})`, `@${id}]`)
 					} else { // Regular cite
-						replacements = replacements.replaceAll(`(${cite.cite})`, `[@${matchingRef.id}]`)
+						replacements = replacements.replaceAll(`(${original})`, `[@${id}]`)
 					}
 				}
 			})
