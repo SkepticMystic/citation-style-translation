@@ -58,35 +58,87 @@ export default class Cites2PandocPlugin extends Plugin {
 			name: 'Convert cites2Pandoc and copy to clipboard',
 			callback: this.cites2Pandoc
 		});
+		this.addCommand({
+			id: 'Pandoc2Cites',
+			name: 'Convert Pandoc2Cites and copy to clipboard',
+			callback: this.Pandoc2Cites
+		});
 
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
 
-	getSelectionText() {
+	async getSelectionText() {
 		var text = "";
 		if (window.getSelection) {
 			text = window.getSelection().toString();
 		}
-		return text;
+
+		if (text !== '') {
+			return text
+		} else {
+			// Read current file
+			const currFile = this.app.workspace.getActiveFile()
+			return (await this.app.vault.cachedRead(currFile))
+		}
+	}
+
+	getCitationEntries() {
+		let entries = this.app.plugins.plugins['obsidian-citation-plugin']?.library?.entries
+		if (!entries) { new Notice('Please enable the Citations plugin'); return }
+		let refs = Object.values(entries).map(entry => entry.data)
+		return refs
+	}
+
+	Pandoc2Cites = async () => {
+		const content = await this.getSelectionText()
+		console.log({ content })
+		const refs = this.getCitationEntries()
+		if (!refs) { return }
+
+		const pandocCites = content.match(/\[@.+?\]/g)
+		console.log({ pandocCites })
+
+		let replacement = content.slice();
+
+		pandocCites.forEach(pCite => {
+			const key = pCite.replace(/\[@(.+?)\]/, '$1')
+			const ref = refs.find(ref => ref.id === key)
+			if (!ref) return
+			console.log({ pCite, key, ref })
+			const year = ref.issued['date-parts'][0][0]
+			let authorStr: string;
+
+			if (ref.author.length <= 2) {
+				const authorArr: string[] = ref.author.map(author => {
+					if (author.family) {
+						return author.family
+					} else if (author.literal) {
+						return author.literal
+					}
+				})
+				authorStr = authorArr.join(' & ')
+			} else if (ref.author.length > 2) {
+				if (ref.author[0].family) {
+					authorStr = `${ref.author[0].family} et al.`
+				} else if (ref.author[0].literal) {
+					authorStr = `${ref.author[0].literal} et al.`
+				}
+
+			}
+			console.log({ year, authorStr })
+			const intextCite = `(${authorStr}, ${year})`
+			replacement = replacement.replaceAll(pCite, intextCite)
+		})
+		console.log({ replacement })
+		copy(replacement)
 	}
 
 
 	cites2Pandoc = async () => {
-		const selection = this.getSelectionText();
-		let content: string;
-		if (selection !== '') {
-			content = selection
-		} else {
-			// Read current file
-			const currFile = this.app.workspace.getActiveFile()
-			content = await this.app.vault.cachedRead(currFile)
-		}
+		const content = await this.getSelectionText()
 		console.log({ content })
-
-		// Get Citations plugin library
-		let entries = this.app.plugins.plugins['obsidian-citation-plugin']?.library?.entries
-		if (!entries) { new Notice('Please enable the Citations plugin'); return }
-		let refs = Object.values(entries).map(entry => entry.data)
+		const refs = this.getCitationEntries()
+		if (!refs) { return }
 
 		const cites = content.match(citeRegex)
 		console.log({ cites })
