@@ -62,15 +62,31 @@ export default class Cites2PandocPlugin extends Plugin {
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
 
+	getSelectionText() {
+		var text = "";
+		if (window.getSelection) {
+			text = window.getSelection().toString();
+		}
+		return text;
+	}
+
+
 	cites2Pandoc = async () => {
+		const selection = this.getSelectionText();
+		let content: string;
+		if (selection !== '') {
+			content = selection
+		} else {
+			// Read current file
+			const currFile = this.app.workspace.getActiveFile()
+			content = await this.app.vault.cachedRead(currFile)
+		}
+		console.log({ content })
+
 		// Get Citations plugin library
 		let entries = this.app.plugins.plugins['obsidian-citation-plugin']?.library?.entries
 		if (!entries) { new Notice('Please enable the Citations plugin'); return }
 		let refs = Object.values(entries).map(entry => entry.data)
-
-		// Read current file
-		const currFile = this.app.workspace.getActiveFile()
-		const content = await this.app.vault.cachedRead(currFile)
 
 		const cites = content.match(citeRegex)
 		console.log({ cites })
@@ -101,7 +117,7 @@ export default class Cites2PandocPlugin extends Plugin {
 			})
 			console.log(replacements)
 		} else {
-			
+
 		}
 
 
