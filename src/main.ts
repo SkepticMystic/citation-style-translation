@@ -1,0 +1,122 @@
+import { Notice, Plugin } from 'obsidian';
+import { citeRegex } from 'src/contants';
+import { copy } from 'src/util';
+import { SampleSettingTab } from './SampleSettingTab';
+
+interface Cites2PandocSettings { }
+
+const DEFAULT_SETTINGS: Cites2PandocSettings = {}
+
+declare module 'obsidian' {
+	interface App {
+		plugins: {
+			plugins: {
+				'obsidian-citation-plugin': {
+					library: {
+						entries: {
+							[id: string]: {
+								data: {
+									id: string,
+									// abstract?: string,
+									// accessed?: any,
+									author?: {
+										family?: string,
+										given?: string,
+										literal?: string
+									}[],
+									// DOI?: string,
+									// ISSN?: string,
+									// issue?: string,
+									issued?: { 'date-parts': number[][] },
+									// language?: string,
+									// note?: string,
+									// page?: string,
+									// source?: string,
+									// title?: string,
+									// type?: string,
+									// URL?: string,
+									// volume?: string,
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+export default class Cites2PandocPlugin extends Plugin {
+	settings: Cites2PandocSettings;
+
+	async onload() {
+		console.log('loading plugin');
+
+		await this.loadSettings();
+
+		this.addCommand({
+			id: 'cites2Pandoc',
+			name: 'Convert cites2Pandoc and copy to clipboard',
+			callback: this.cites2Pandoc
+		});
+
+		this.addSettingTab(new SampleSettingTab(this.app, this));
+	}
+
+	cites2Pandoc = async () => {
+		// Get Citations plugin library
+		let entries = this.app.plugins.plugins['obsidian-citation-plugin']?.library?.entries
+		if (!entries) { new Notice('Please enable the Citations plugin'); return }
+		let refs = Object.values(entries).map(entry => entry.data)
+
+		const firstAuthorSurname = (cite: string) =>
+			cite.split(',')[0].split('et al.')[0].split('&')[0].trim();
+		const citeYear = (cite: string) => cite.match(new RegExp(/\d{4}/g))[0];
+
+		// Read current file
+		const currFile = this.app.workspace.getActiveFile()
+		const content = await this.app.vault.cachedRead(currFile)
+
+		console.log(citeRegex)
+		const cites = content.match(citeRegex)
+		console.log({ cites })
+		const citeMap = cites.map((cite) => {
+			const firstAuthor = firstAuthorSurname(cite);
+			const year = citeYear(cite)
+			return { cite, firstAuthor, year };
+		});
+		console.log({ citeMap })
+
+		// Replace cites with pandoc cites
+		let replacements = content.slice()
+		citeMap.forEach(cite => {
+			console.log({ cite })
+			const matchingRef = refs.find(ref =>
+				ref.author?.some(author =>
+					author?.family === cite.firstAuthor ||
+					author?.literal === cite.firstAuthor
+				)
+				&&
+				ref.issued['date-parts'][0][0].toString() === cite.year)
+			if (matchingRef) {
+				const panCite = `[@${matchingRef.id}]`
+				replacements = replacements.replaceAll(`(${cite.cite})`, panCite)
+			}
+		})
+		console.log(replacements)
+
+		replacements = replacements.replaceAll(/\\cite\{(.+?)\}/g, '[@$1]')
+		copy(replacements)
+	}
+	onunload() {
+		console.log('unloading plugin');
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+}
+
