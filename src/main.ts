@@ -153,7 +153,7 @@ export default class CSTPlugin extends Plugin {
 			console.log({ citeMap })
 
 			// Replace cites with pandoc cites
-			citeMap.forEach(cite => {
+			citeMap.forEach((cite, i) => {
 				console.log({ cite })
 				const matchingRef = refs.find(ref =>
 					ref.author?.some(author =>
@@ -162,16 +162,34 @@ export default class CSTPlugin extends Plugin {
 					)
 					&&
 					ref.issued['date-parts'][0][0].toString() === cite.year)
+
 				if (matchingRef) {
-					const panCite = `[@${matchingRef.id}]`
-					replacements = replacements.replaceAll(`(${cite.cite})`, panCite)
+					console.log({ matchingRef })
+					if ( // Start of a multi-cite
+						cite.cite.endsWith(';') &&
+						!citeMap[i - 1].cite.endsWith(';')
+					) {
+						replacements = replacements.replaceAll(`(${cite.cite}`, `[@${matchingRef.id};`)
+					}
+					else if ( // Middle of a multi-cite
+						cite.cite.endsWith(';') &&
+						citeMap[i - 1].cite.endsWith(';')
+					) {
+						replacements = replacements.replaceAll(`${cite.cite}`, `@${matchingRef.id};`)
+					}
+					else if ( // End of a multi-cite
+						!cite.cite.endsWith(';') &&
+						citeMap[i - 1]?.cite.endsWith(';')
+					) {
+						replacements = replacements.replaceAll(`${cite.cite})`, `@${matchingRef.id}]`)
+
+					} else { // Regular cite
+						replacements = replacements.replaceAll(`(${cite.cite})`, `[@${matchingRef.id}]`)
+					}
 				}
 			})
 			console.log(replacements)
-		} else {
-
-		}
-
+		} else { return }
 
 		// Latex → Pandoc
 		replacements = replacements.replaceAll(/\\cite\{(.+?)\}/g, '[@$1]')
