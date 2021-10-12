@@ -1,7 +1,7 @@
 {
 	"id": "citation-translation",
 	"name": "Citation Translation",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"minAppVersion": "0.12.6",
 	"description": "Translate your citations from one form to another",
 	"author": "SkepticMystic",
