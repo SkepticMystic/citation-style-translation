@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.7](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.6...0.0.7) (2021-10-12)
+
+
+### Features
+
+* :sparkles: Select text to translate only that selection ([baa12e5](https://github.com/SkepticMystic/Cites2Pandoc/commit/baa12e507e2b73da8d640e98163cfbf7788a9c5c))
+
 ### [0.0.6](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.5...0.0.6) (2021-10-12)
 
 
