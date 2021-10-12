@@ -74,30 +74,36 @@ export default class Cites2PandocPlugin extends Plugin {
 
 		const cites = content.match(citeRegex)
 		console.log({ cites })
-		const citeMap = cites.map((cite) => {
-			const firstAuthor = cite.match(authorReg)[0];
-			const year = cite.match(/\d{4}/g)[0]
-			return { cite, firstAuthor, year };
-		});
-		console.log({ citeMap })
 
-		// Replace cites with pandoc cites
 		let replacements = content.slice()
-		citeMap.forEach(cite => {
-			console.log({ cite })
-			const matchingRef = refs.find(ref =>
-				ref.author?.some(author =>
-					author?.family === cite.firstAuthor ||
-					author?.literal === cite.firstAuthor
-				)
-				&&
-				ref.issued['date-parts'][0][0].toString() === cite.year)
-			if (matchingRef) {
-				const panCite = `[@${matchingRef.id}]`
-				replacements = replacements.replaceAll(`(${cite.cite})`, panCite)
-			}
-		})
-		console.log(replacements)
+		if (cites) {
+			const citeMap = cites.map((cite) => {
+				const firstAuthor = cite.match(authorReg)[0];
+				const year = cite.match(/\d{4}/g)[0]
+				return { cite, firstAuthor, year };
+			});
+			console.log({ citeMap })
+
+			// Replace cites with pandoc cites
+			citeMap.forEach(cite => {
+				console.log({ cite })
+				const matchingRef = refs.find(ref =>
+					ref.author?.some(author =>
+						author?.family === cite.firstAuthor ||
+						author?.literal === cite.firstAuthor
+					)
+					&&
+					ref.issued['date-parts'][0][0].toString() === cite.year)
+				if (matchingRef) {
+					const panCite = `[@${matchingRef.id}]`
+					replacements = replacements.replaceAll(`(${cite.cite})`, panCite)
+				}
+			})
+			console.log(replacements)
+		} else {
+			
+		}
+
 
 		// Latex → Pandoc
 		replacements = replacements.replaceAll(/\\cite\{(.+?)\}/g, '[@$1]')
