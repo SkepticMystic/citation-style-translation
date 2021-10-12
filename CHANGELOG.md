@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.10](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.9...0.0.10) (2021-10-12)
+
+
+### Features
+
+* :sparkles: Working multi-cites going from in-text → pandoc! ([6d9ec92](https://github.com/SkepticMystic/Cites2Pandoc/commit/6d9ec92166687234c260039dc2578e87098bf28f))
+
 ### [0.0.9](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.8...0.0.9) (2021-10-12)
 
 ### [0.0.8](https://github.com/SkepticMystic/citation-style-translation/compare/0.0.7...0.0.8) (2021-10-12)
