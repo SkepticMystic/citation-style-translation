@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.12](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.11...0.0.12) (2021-10-20)
+
+
+### Features
+
+* :sparkles: Handle ambiguous matchingRefs by throwing Notice ([94c29c9](https://github.com/SkepticMystic/Cites2Pandoc/commit/94c29c93516c914feb6e2a29af5275dd80848e6e))
+
 ### [0.0.11](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.10...0.0.11) (2021-10-12)
 
 
