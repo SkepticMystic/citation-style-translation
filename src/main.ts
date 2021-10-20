@@ -183,6 +183,9 @@ export default class CSTPlugin extends Plugin {
         );
 
         if (matchingRef.length === 0) {
+			new Notice(
+				`No possible reference was found for ${cite.original}. It has been skipped.`
+			  );
           return;
         } else if (matchingRef.length === 1) {
           console.log({ matchingRef });
