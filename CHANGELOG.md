@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.13](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.12...0.0.13) (2021-10-20)
+
+
+### Features
+
+* :sparkles: Also throw Notice when no ref is found ([232a844](https://github.com/SkepticMystic/Cites2Pandoc/commit/232a84476e420e4aaacd87db2ecf36e9884772e2))
+
 ### [0.0.12](https://github.com/SkepticMystic/Cites2Pandoc/compare/0.0.11...0.0.12) (2021-10-20)
 
 
